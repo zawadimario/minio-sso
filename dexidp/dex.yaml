@@ -15,13 +15,13 @@ metadata:
   namespace: auth
 data:
   issuer: http://dex.auth.svc.cluster.local:5556/dex
-  ldap_host: openldap.auth:389
+  ldap_host: ldap.auth.svc.cluster.local:389
   ldap_bind_dn: cn=adminuser,dc=techtel,dc=com
   ldap_bind_pw: admin123
   ldap_user_base_dn: dc=techtel,dc=com
   ldap_group_base_dn: ou=users,dc=techtel,dc=com
   client_id: OIDC_CLIENT_ID
-  oidc_redirect_uris: '["http://localhost:9001/oauth_callback"]'
+  oidc_redirect_uris: '["/authservice/oidc/callback"]'
   application_secret: OIDC_CLIENT_SECRET
   config.yaml: |
     issuer: http://dex.auth.svc.cluster.local:5556/dex
@@ -31,6 +31,8 @@ data:
         inCluster: true
     web:
       http: 0.0.0.0:5556
+      telemetry:
+        http: 0.0.0.0:5558
     logger:
       level: "debug"
       format: text
@@ -69,7 +71,8 @@ data:
       skipApprovalScreen: true
     staticClients:
     - idEnv: OIDC_CLIENT_ID
-      redirectURIs: ["http://localhost:9001/oauth_callback"]
+      redirectURIs: ["/authservice/oidc/callback"]
+      # redirectURIs: ["http://localhost:9001/"]
       name: 'MINIO OIDC CLIENT'
       secretEnv: OIDC_CLIENT_SECRET
 ---
@@ -101,6 +104,10 @@ spec:
         ports:
         - name: http
           containerPort: 5556
+        - name: grpc
+          containerPort: 5557
+        - name: metrics
+          containerPort: 5558
         volumeMounts:
         - name: config
           mountPath: /etc/dex/cfg
@@ -128,9 +135,17 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - name: dex
+  - name: http
     port: 5556
     protocol: TCP
     targetPort: 5556
+  - name: grpc
+    port: 5557
+    protocol: TCP
+    targetPort: 5557
+  - name: grpc
+    port: 5558
+    protocol: TCP
+    targetPort: 5558
   selector:
     app: dex
