@@ -139,7 +139,7 @@ spec:
     port: 5556
     protocol: TCP
     targetPort: 5556
-  - name: grpc
+  - name: metrics
     port: 5557
     protocol: TCP
     targetPort: 5557
