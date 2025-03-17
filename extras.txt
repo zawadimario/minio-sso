@@ -1,0 +1,3 @@
+mc idp openid add minioserver/ client_id=minio-client-app client_secret=minio-client-app-secret config_url="http://dex.auth.svc.cluster.local:5556/dex/.well-known/openid-configuration" scopes="profile,openid,groups,email,name" redirect_uri="http://localhost:9001/oauth_callback" role_policy="readwrite,diagnostics,consoleAdmin,readonly" comment="Login with Dex SSO"
+
+mc idp openid add minioserver/ client_id=minio-client-app client_secret=minio-client-app-secret config_url="http://dex.auth.svc.cluster.local:5556/dex/.well-known/openid-configuration" scopes="profile,openid,groups,email,name" redirect_uri="http://minio-service.minio-service:9001/authservice/oidc/callback" role_policy="readwrite,diagnostics,consoleAdmin,readonly" comment="Login with Dex SSO"
