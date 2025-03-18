@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: authservice
-  namespace: oidc
+  namespace: authservice
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -27,13 +27,13 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: authservice
-    namespace: oidc
+    namespace: authservice
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: authservice-pvc
-  namespace: oidc
+  namespace: authservice
 spec:
   accessModes:
     - ReadWriteOnce
@@ -45,7 +45,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: oidc-authservice-client
-  namespace: oidc
+  namespace: authservice
 type: Opaque
 data:
   CLIENT_ID: bWluaW8tY2xpZW50LWFwcA==
@@ -56,15 +56,17 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: oidc-authservice-parameters
-  namespace: oidc
+  namespace: authservice
 data:
   OIDC_PROVIDER: http://dex.auth.svc.cluster.local:5556/dex
   OIDC_AUTH_URL: /dex/auth
   OIDC_SCOPES: openid email groups profile
-  AUTHSERVICE_URL_PREFIX: /authservice/
+  AUTHSERVICE_URL_PREFIX: http://localhost:9090
+  REDIRECT_URL: /oauth_callback
   SKIP_AUTH_URLS: /dex
   AFTER_LOGOUT_URL: /
-  USERID_HEADER: minio-service-userid
+  AFTER_LOGIN_URL: /
+  USERID_HEADER: userid
   USERID_PREFIX: ""
   USERID_CLAIM: email
   PORT: '"8080"'
@@ -75,7 +77,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: oidc-authservice
-  namespace: oidc
+  namespace: authservice
 spec:
   replicas: 1
   selector:
@@ -120,7 +122,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: authservice
-  namespace: oidc
+  namespace: authservice
 spec:
   type: ClusterIP
   selector:
