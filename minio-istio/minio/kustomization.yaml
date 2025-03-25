@@ -1,0 +1,6 @@
+resources:
+  - namespace.yaml
+  - custom-istio/deny_all_authorizationpolicy.yaml
+  - custom-istio/gateway_authpolicy.yaml
+  - custom-istio/x-forwarded-host.yaml
+  - deployment.yaml

@@ -1,0 +1,98 @@
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  namespace: istio-system
+spec:
+  hub: docker.io/istio
+  tag: 1.23.2
+
+  # Turn on default components: base, pilot, and ingress gateway
+  components:
+    base:
+      enabled: true
+    cni:
+      enabled: true
+      namespace: istio-system
+    pilot:
+      enabled: true
+      k8s:
+        # hpaSpec:
+        #   minReplicas: 1
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: node-role.kubernetes.io/control-plane
+                  operator: In
+                  values:
+                  - ""
+        # affinity:
+        #   podAntiAffinity:
+        #     requiredDuringSchedulingIgnoredDuringExecution:
+        #     - labelSelector:
+        #         matchExpressions:
+        #         - key: app
+        #           operator: In
+        #           values:
+        #           - istiod
+        #       topologyKey: "kubernetes.io/hostname"
+    # Istio Gateway feature
+    ingressGateways:
+    - name: istio-ingressgateway
+      enabled: true
+      k8s:
+        # hpaSpec:
+        #   minReplicas: 1
+        affinity:
+          podAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - istio-ingressgateway
+              topologyKey: kubernetes.io/hostname
+        # affinity:
+        #   podAntiAffinity:
+        #     requiredDuringSchedulingIgnoredDuringExecution:
+        #     - labelSelector:
+        #         matchExpressions:
+        #         - key: app
+        #           operator: In
+        #           values:
+        #           - istio-ingressgateway
+        #       topologyKey: "kubernetes.io/hostname"
+    egressGateways:
+    - name: istio-egressgateway
+      enabled: false
+
+  # Most default values come from the helm chart's values.yaml
+  # Below are the things that differ
+  values:
+    cni:
+      repair:
+        repairPods: true
+    defaultRevision: ""
+    global:
+      istioNamespace: istio-system
+      configValidation: true
+    gateways:
+      istio-ingressgateway: {}
+      istio-egressgateway: {}
+  meshConfig:
+    accessLogFile: /dev/stdout
+    outboundTrafficPolicy:
+      mode: REGISTRY_ONLY
+    defaultConfig:
+      holdApplicationUntilProxyStarts: true
+      tracing:
+        sampling: 1.0
+        max_path_tag_length: 256
+        custom_tags:
+          clusterID:
+            environment:
+              name: ISTIO_META_CLUSTER_ID
+    enableTracing: false
+    enablePrometheusMerge: true

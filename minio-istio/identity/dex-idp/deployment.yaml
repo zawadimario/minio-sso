@@ -1,0 +1,137 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dex-oidc-client
+  namespace: auth
+type: Opaque
+data:
+  OIDC_CLIENT_ID: bWluaW8tY2xpZW50LWFwcA==
+  OIDC_CLIENT_SECRET: bWluaW8tY2xpZW50LWFwcC1zZWNyZXQ=
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dex
+  namespace: auth
+data:
+  issuer: http://dex.auth.svc.cluster.local:5556/dex
+  ldap_host: openldap.auth:389
+  ldap_bind_dn: cn=adminuser,dc=techtel,dc=com
+  ldap_bind_pw: admin123
+  ldap_user_base_dn: dc=techtel,dc=com
+  ldap_group_base_dn: ou=users,dc=techtel,dc=com
+  client_id: OIDC_CLIENT_ID
+  oidc_redirect_uris: '["http://localhost:8009/oauth_callback"]'
+  application_secret: OIDC_CLIENT_SECRET
+  config.yaml: |
+    issuer: http://dex.auth.svc.cluster.local:5556/dex
+    storage:
+      type: kubernetes
+      config:
+        inCluster: true
+    web:
+      http: 0.0.0.0:5556
+      telemetry:
+        http: 0.0.0.0:5558
+    logger:
+      level: "debug"
+      format: text
+    connectors:
+      - type: ldap
+        id: ldap
+        name: OpenLDAP
+        config:
+          host: openldap.auth:389
+          insecureNoSSL: true
+          insecureSkipVerify: true
+          startTLS: false
+          bindDN: cn=adminuser,dc=techtel,dc=com
+          bindPW: admin123
+
+          usernamePrompt: "Email Address"
+
+          userSearch:
+            baseDN: dc=techtel,dc=com
+            username: sn
+            idAttr: uid
+            emailAttr: mail
+            nameAttr: sn
+          
+          groupSearch:
+            baseDN: dc=techtel,dc=com
+            userMatchers:
+            - userAttr: DN
+              groupAttr: member
+            nameAttr: sn
+
+    oauth2:
+      skipApprovalScreen: true
+      alwaysShowLoginScreen: false
+    staticClients:
+    - idEnv: OIDC_CLIENT_ID
+      redirectURIs: ["http://localhost:8009/oauth_callback"]
+      name: 'MinIO OIDC Client'
+      secretEnv: OIDC_CLIENT_SECRET
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: dex
+  name: dex
+  namespace: auth
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+        app: dex
+  template:
+    metadata:
+      labels:
+        app: dex
+      annotations:
+        sidecar.istio.io/inject: "false"
+    spec:
+      serviceAccountName: dex
+      containers:
+      - image: dexidp/dex
+        imagePullPolicy: IfNotPresent
+        name: dex
+        command: ["dex", "serve", "/etc/dex/cfg/config.yaml"]
+        ports:
+        - name: http
+          containerPort: 5556
+        volumeMounts:
+        - name: config
+          mountPath: /etc/dex/cfg
+        envFrom:
+        - secretRef:
+            name: dex-oidc-client
+        env:
+        - name: KUBERNETES_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        resources: {}
+      volumes:
+      - name: config
+        configMap:
+          name: dex
+          items:
+          - key: config.yaml
+            path: config.yaml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dex
+  namespace: auth
+spec:
+  type: ClusterIP
+  ports:
+  - name: dex
+    port: 5556
+    protocol: TCP
+    targetPort: 5556
+  selector:
+    app: dex

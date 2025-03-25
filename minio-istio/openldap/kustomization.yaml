@@ -1,0 +1,6 @@
+namespace: auth
+resources:
+- base/configmap.yaml
+- base/serviceaccount.yaml
+- base/statefulset.yaml
+- base/service.yaml
