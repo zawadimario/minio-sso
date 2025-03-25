@@ -1,5 +1,5 @@
 resources:
-  - ../../openldap
+  - ../../../openldap
   - crds.yaml
   - virtualservice.yaml
   - deployment.yaml

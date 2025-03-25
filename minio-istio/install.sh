@@ -46,5 +46,5 @@ echo "Istalled Successfully... Run the uninstall.sh script to uninstall!"
 printf "\n"
 
 # Access MinIO via istio ingress gateway
-# k port-forward -n auth svc/dex 5556 &
+# kubectl port-forward -n auth svc/dex 5556 &
 # kubectl port-forward -n istio-system svc/istio-ingressgateway 8009:80
